@@ -1,8 +1,8 @@
 import os
 from models import db, User
-from flask import Flask, redirect, render_template
+from flask import Flask, redirect, render_template, session
 from flask_sqlalchemy import SQLAlchemy
-from forms import RegisterForm
+from forms import RegisterForm, LoginForm
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
@@ -29,13 +29,34 @@ def display_register():
         first_name = form.first_name.data
         last_name = form.last_name.data
 
-        user = User(username=username, email=email, password=password,
-                    first_name=first_name, last_name=last_name)
+        user = User.register_user(username=username, email=email,
+                password=password, first_name=first_name, last_name=last_name)
 
         db.session.add(user)
         db.session.commit()
 
-        return redirect('/users/username')
+        session['user'] = user.username
 
-    return render_template('base.html', form=form)
+        return redirect(f'/users/{user.username}')
+
+    return render_template('register.html', form=form)
+
+@app.get('/user/<username>')
+def display_user_profile(username):
+    if session['user'] and username == session['user']:
+        user = User.query.get_or_404(username)
+        return render_template('user.html', user=user)
+
+    else:
+        # TODO: flash message
+        return redirect('/')
+
+@app.route('/login', methods=['GET', 'POST'])
+def display_login():
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        user = User.query.get(form.username.data)
+
+
 
