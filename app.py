@@ -1,7 +1,7 @@
 import os
-from models import db, User, connect_db
+from models import db, User, connect_db, Note
 from flask import Flask, redirect, render_template, session
-from forms import RegisterForm, LoginForm, CSRFProtectForm
+from forms import RegisterForm, LoginForm, CSRFProtectForm, AddNoteForm
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
@@ -12,6 +12,8 @@ app.config['SQLALCHEMY_ECHO'] = True
 app.config["SECRET_KEY"] = 'letterboxd'
 
 connect_db(app)
+
+USER_KEY = 'user'
 
 # TODO: constant session user key
 
@@ -27,8 +29,9 @@ def register():
     """If form validates, creates new user
     and logs user in. Else, dispalys form."""
 
-    if session.get('user'):
-        return redirect(f'/users/{session["user"]}')
+    if session.get(USER_KEY):
+        print('****************************************HERE')
+        return redirect(f'/users/{session[USER_KEY]}')
 
     form = RegisterForm()
 
@@ -50,7 +53,7 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        session['user'] = user.username
+        session[USER_KEY] = user.username
 
         return redirect(f'/users/{user.username}')
 
@@ -63,7 +66,7 @@ def display_user_profile(username):
 
     form = CSRFProtectForm()
 
-    if session.get('user') and username == session['user']:
+    if session.get(USER_KEY) and username == session[USER_KEY]:
         user = User.query.get_or_404(username)
         return render_template('user.html', user=user, form=form)
 
@@ -76,8 +79,8 @@ def display_user_profile(username):
 def login():
     """If form valid, logs in user. Else, renders form."""
 
-    if session.get('user'):
-        return redirect(f'/users/{session["user"]}')
+    if session.get(USER_KEY):
+        return redirect(f'/users/{session[USER_KEY]}')
 
     form = LoginForm()
 
@@ -88,7 +91,7 @@ def login():
         user = User.authenticate(username, password)
 
         if user:
-            session['user'] = user.username
+            session[USER_KEY] = user.username
             return redirect(f'/users/{username}')
 
         else:
@@ -104,9 +107,69 @@ def logout():
     form = CSRFProtectForm()
 
     if form.validate_on_submit():
-        session.pop('user', None)
+        session.pop(USER_KEY, None)
 
     return redirect('/')
+
+
+########### USER SPECIFIC ROUTES ###################
+
+@app.post('/users/<username>/delete')
+def delete_user(username):
+    form = CSRFProtectForm()
+    user = User.query.get_or_404(username)
+
+    if not (USER_KEY in session and session[USER_KEY] == username):
+        return redirect('/')
+
+
+    if form.validate_on_submit():
+        # not N+1 !!
+        notes = Note.query.filter(Note.owner_username == user.username)
+
+        for note in notes:
+            db.session.delete(note)
+
+        db.session.delete(user)
+        db.session.commit()
+
+        session.pop(USER_KEY, None)
+
+        return redirect('/')
+    else:
+        render_template('user.html', user=user, form=form)
+
+@app.route('/users/<username>/notes/add', methods = ['POST', 'GET'])
+def add_notes(username):
+
+    """if GET, show form to add a note,
+    if POST, handle form data and add note"""
+
+    if not (USER_KEY in session and session[USER_KEY] == username):
+        return redirect('/')
+
+    form = AddNoteForm()
+
+    if form.validate_on_submit():
+        note = Note(
+            title=form.title.data,
+            content=form.content.data,
+            owner=username
+        )
+        db.session.add(note)
+        db.session.commit()
+
+        return redirect(f'/users/{username}')
+
+    else:
+        # render add note form
+        return render_template('add_note.html', form=form)
+
+
+
+
+
+
 
 
 

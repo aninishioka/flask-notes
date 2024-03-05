@@ -5,11 +5,13 @@ db = SQLAlchemy()
 
 bcrypt = Bcrypt()
 
+
 def connect_db(app):
     """Connect to database"""
     app.app_context().push()
     db.app = app
     db.init_app(app)
+
 
 class User(db.Model):
     """create a User mdoel"""
@@ -17,27 +19,27 @@ class User(db.Model):
 
     username = db.Column(
         db.String(20),
-        primary_key = True
+        primary_key=True
     )
 
     hashed_password = db.Column(
         db.String(100),
-        nullable = False
+        nullable=False
     )
 
     email = db.Column(
         db.String(50),
-        nullable = False
+        nullable=False
     )
 
     first_name = db.Column(
         db.String(30),
-        nullable = False
+        nullable=False
     )
 
     last_name = db.Column(
         db.String(30),
-        nullable = False
+        nullable=False
     )
 
     @classmethod
@@ -62,3 +64,32 @@ class User(db.Model):
         else:
             return False
 
+
+class Note(db.Model):
+    """Note table"""
+
+    __tablename__ = 'notes'
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    title = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    content = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    owner_username = db.Column(
+        db.String(20),
+        db.ForeignKey('users.username'),
+        nullable=False
+    )
+
+    users = db.relationship('User', backref = "notes")

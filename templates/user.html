@@ -20,4 +20,28 @@ username: {{user.username}}
 <div>
 email: {{user.email}}
 </div>
+
+
+<h4>User Notes</h4>
+
+<form action="/users/{{ user.username }}/delete" method="POST">
+  {{ form.hidden_tag() }}
+  <button class = 'btn btn-danger'>Delete Account</button>
+</form>
+
+<form>
+  {{ form.hidden_tag() }}
+  <ul>
+    {% for note in user.notes %}
+
+    <li>
+      <a href="/notes/{{ note.id }}/update">{{ note.title }}</a>
+      <button formaction="/notes/{{ note.id }}/delete" class = 'btn btn-danger btn-sm' formmethod="POST">delete</button>
+    </li>
+
+    {% endfor %}
+  </ul>
+</form>
+
+
 {% endblock %}
