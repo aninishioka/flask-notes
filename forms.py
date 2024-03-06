@@ -38,6 +38,7 @@ class LoginForm(FlaskForm):
     username = StringField("Username", validators=[InputRequired()])
     password = PasswordField("Password",validators=[InputRequired()])
 
+
 class AddNoteForm(FlaskForm):
     """Add a note form"""
 
@@ -50,7 +51,18 @@ class AddNoteForm(FlaskForm):
         validators=[InputRequired()]
     )
 
+# TODO: match length max with models
+class EditNoteForm(FlaskForm):
+    """Edit a note form"""
 
+    title = StringField(
+        "Title",
+        validators=[InputRequired(),Length(max=30)]
+    )
+
+    content = TextAreaField("Content",
+        validators=[InputRequired()]
+    )
 
 class CSRFProtectForm(FlaskForm):
     """For protection purposes, for logout"""

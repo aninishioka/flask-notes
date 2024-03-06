@@ -64,7 +64,7 @@ class User(db.Model):
         else:
             return False
 
-
+# TODO: users to user
 class Note(db.Model):
     """Note table"""
 
